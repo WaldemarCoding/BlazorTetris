@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -47,6 +47,10 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
 
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,22 +64,21 @@ jobs:
         run: |
           dotnet publish src/BlazorTetris/BlazorTetris.csproj \
             -c Release \
-            -o publish \
-            /p:GHPages=true
+            -o publish
 
-      # Fix base href for GitHub Pages sub-path (/<repo-name>/)
-      - name: Patch base href
+      - name: Patch base href for GitHub Pages sub-path
         run: |
           REPO="${{ github.event.repository.name }}"
           sed -i "s|<base href=\"/\" />|<base href=\"/$REPO/\" />|g" publish/wwwroot/index.html
 
-      # Blazor WASM SPA routing: copy index.html → 404.html
-      - name: Copy 404 page
+      - name: Copy 404 page (SPA routing fallback)
         run: cp publish/wwwroot/index.html publish/wwwroot/404.html
 
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: publish/wwwroot
-          force_orphan: true
+          path: publish/wwwroot
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
