@@ -1,0 +1,30 @@
+@using BlazorTetris.Models
+
+<div class="piece-panel">
+    <h3 class="panel-title">@Title</h3>
+    <div class="piece-grid">
+        @for (int r = 0; r < 4; r++)
+        {
+            <div class="piece-row">
+                @for (int c = 0; c < 4; c++)
+                {
+                    <div class="piece-cell @GetClass(r, c)"></div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public Tetromino? Piece { get; set; }
+
+    private string GetClass(int row, int col)
+    {
+        if (Piece is null) return "cell-empty";
+        foreach (var (r, c) in Piece.GetCells())
+            if (r == row && c == col)
+                return TetrominoColors.GetCssClass((int)Piece.Type);
+        return "cell-empty";
+    }
+}

@@ -1,0 +1,38 @@
+# .NET build output
+bin/
+obj/
+publish/
+
+# .NET 10 solution user files
+*.slnx.user
+
+# User-specific files
+*.user
+*.suo
+.vs/
+.vscode/
+
+# Rider / IntelliJ
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+
+# Secrets / local config
+*.env
+appsettings.Local.json

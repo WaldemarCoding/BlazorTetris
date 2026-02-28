@@ -1,0 +1,41 @@
+@using BlazorTetris.Models
+
+<div class="game-board" role="grid" aria-label="Tetris board">
+    @for (int r = 0; r < GameState.Rows; r++)
+    {
+        <div class="board-row" role="row">
+            @for (int c = 0; c < GameState.Cols; c++)
+            {
+                <div class="board-cell @GetCellClass(r, c)" role="gridcell"></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public GameState GameState { get; set; } = null!;
+
+    private string GetCellClass(int row, int col)
+    {
+        // Active piece takes priority
+        if (GameState.CurrentPiece is not null)
+        {
+            foreach (var (r, c) in GameState.CurrentPiece.GetCells())
+                if (r == row && c == col)
+                    return TetrominoColors.GetCssClass((int)GameState.CurrentPiece.Type);
+        }
+
+        // Ghost piece (landing preview)
+        var ghost = GameState.GetGhostPiece();
+        if (ghost is not null)
+        {
+            foreach (var (r, c) in ghost.GetCells())
+                if (r == row && c == col)
+                    return "cell-ghost";
+        }
+
+        // Locked board cells
+        int boardValue = GameState.GetCell(row, col);
+        return TetrominoColors.GetCssClass(boardValue);
+    }
+}

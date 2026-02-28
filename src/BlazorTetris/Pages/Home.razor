@@ -1,0 +1,103 @@
+@page "/"
+@using BlazorTetris.Models
+@using BlazorTetris.Services
+@using BlazorTetris.Components
+@inject GameService Game
+@implements IAsyncDisposable
+
+<PageTitle>Blazor Tetris</PageTitle>
+
+<div class="game-container"
+     tabindex="0"
+     @ref="_gameRef"
+     @onkeydown="HandleKeyDown"
+     @onkeydown:preventDefault="true">
+
+    <!-- Left sidebar -->
+    <div class="sidebar sidebar-left">
+        <NextPiecePreview Title="Hold" Piece="@Game.State.HeldPiece" />
+        <KeyBindingsPanel />
+    </div>
+
+    <!-- Centre: board + overlays -->
+    <div class="board-wrapper">
+        <GameBoard GameState="@Game.State" />
+
+        @if (Game.State.Status == GameStatus.Idle)
+        {
+            <div class="overlay">
+                <h1 class="overlay-title">TETRIS</h1>
+                <button class="btn-play" @onclick="StartGame">Start Game</button>
+            </div>
+        }
+        else if (Game.State.Status == GameStatus.Paused)
+        {
+            <div class="overlay">
+                <h2 class="overlay-title">PAUSED</h2>
+                <button class="btn-play" @onclick="Game.PauseOrResume">Resume</button>
+            </div>
+        }
+        else if (Game.State.Status == GameStatus.GameOver)
+        {
+            <div class="overlay">
+                <h2 class="overlay-title">GAME OVER</h2>
+                <p class="overlay-score">Score: @Game.State.Score</p>
+                <button class="btn-play" @onclick="StartGame">Play Again</button>
+            </div>
+        }
+    </div>
+
+    <!-- Right sidebar -->
+    <div class="sidebar sidebar-right">
+        <NextPiecePreview Title="Next" Piece="@Game.State.NextPiece" />
+        <ScoreBoard State="@Game.State" />
+    </div>
+</div>
+
+@code {
+    private ElementReference _gameRef;
+
+    protected override void OnInitialized()
+    {
+        Game.OnStateChanged += OnGameStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await _gameRef.FocusAsync();
+    }
+
+    private async Task StartGame()
+    {
+        await Game.StartNewGameAsync();
+        await _gameRef.FocusAsync();
+    }
+
+    private void OnGameStateChanged()
+        => InvokeAsync(StateHasChanged);
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "ArrowLeft":  Game.MoveLeft();      break;
+            case "ArrowRight": Game.MoveRight();     break;
+            case "ArrowDown":  Game.SoftDrop();      break;
+            case "ArrowUp":    Game.RotateCW();      break;
+            case "z":
+            case "Z":          Game.RotateCCW();     break;
+            case " ":          Game.HardDrop();      break;
+            case "c":
+            case "C":          Game.Hold();          break;
+            case "p":
+            case "P":          Game.PauseOrResume(); break;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Game.OnStateChanged -= OnGameStateChanged;
+        await Game.DisposeAsync();
+    }
+}
