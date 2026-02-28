@@ -3,6 +3,7 @@
 @using BlazorTetris.Services
 @using BlazorTetris.Components
 @inject GameService Game
+@inject AudioService Audio
 @implements IAsyncDisposable
 
 <PageTitle>Blazor Tetris</PageTitle>
@@ -34,7 +35,7 @@
         {
             <div class="overlay">
                 <h2 class="overlay-title">PAUSED</h2>
-                <button class="btn-play" @onclick="Game.PauseOrResume">Resume</button>
+                <button class="btn-play" @onclick="ResumeGame">Resume</button>
             </div>
         }
         else if (Game.State.Status == GameStatus.GameOver)
@@ -51,11 +52,20 @@
     <div class="sidebar sidebar-right">
         <NextPiecePreview Title="Next" Piece="@Game.State.NextPiece" />
         <ScoreBoard State="@Game.State" />
+        <button class="btn-mute" @onclick="ToggleMute" title="Toggle sound">
+            @(_muted ? "🔇" : "🔊")
+        </button>
     </div>
 </div>
 
 @code {
     private ElementReference _gameRef;
+    private bool _muted;
+
+    // Track previous state to detect audio-relevant changes in OnGameStateChanged.
+    private int _prevLines;
+    private int _prevLevel = 1;
+    private GameStatus _prevStatus = GameStatus.Idle;
 
     protected override void OnInitialized()
     {
@@ -70,34 +80,102 @@
 
     private async Task StartGame()
     {
+        _prevLines = 0;
+        _prevLevel = 1;
+        _prevStatus = GameStatus.Running;
         await Game.StartNewGameAsync();
+        await Audio.StartMusicAsync();
         await _gameRef.FocusAsync();
     }
 
-    private void OnGameStateChanged()
-        => InvokeAsync(StateHasChanged);
+    private async Task ResumeGame()
+    {
+        Game.PauseOrResume();
+        if (!_muted) await Audio.StartMusicAsync();
+        await _gameRef.FocusAsync();
+    }
 
-    private void HandleKeyDown(KeyboardEventArgs e)
+    private async Task ToggleMute()
+    {
+        _muted = await Audio.ToggleMuteAsync();
+    }
+
+    private void OnGameStateChanged()
+        => InvokeAsync(async () =>
+        {
+            var s = Game.State;
+
+            // Line clear
+            if (s.LinesCleared > _prevLines)
+                await Audio.PlayLineClearAsync(s.LinesCleared - _prevLines);
+
+            // Level up (only after a line clear, not on new game reset)
+            if (s.Level > _prevLevel && s.LinesCleared > _prevLines)
+                await Audio.PlayLevelUpAsync();
+
+            // Game over
+            if (s.Status == GameStatus.GameOver && _prevStatus != GameStatus.GameOver)
+            {
+                await Audio.StopMusicAsync();
+                await Audio.PlayGameOverAsync();
+            }
+
+            // Pause — stop music
+            if (s.Status == GameStatus.Paused && _prevStatus == GameStatus.Running)
+                await Audio.StopMusicAsync();
+
+            _prevLines  = s.LinesCleared;
+            _prevLevel  = s.Level;
+            _prevStatus = s.Status;
+
+            StateHasChanged();
+        });
+
+    private async void HandleKeyDown(KeyboardEventArgs e)
     {
         switch (e.Key)
         {
-            case "ArrowLeft":  Game.MoveLeft();      break;
-            case "ArrowRight": Game.MoveRight();     break;
-            case "ArrowDown":  Game.SoftDrop();      break;
-            case "ArrowUp":    Game.RotateCW();      break;
+            case "ArrowLeft":
+                Game.MoveLeft();
+                await Audio.PlayMoveAsync();
+                break;
+            case "ArrowRight":
+                Game.MoveRight();
+                await Audio.PlayMoveAsync();
+                break;
+            case "ArrowDown":
+                Game.SoftDrop();
+                await Audio.PlayLockAsync();   // soft thud on soft drop
+                break;
+            case "ArrowUp":
+                Game.RotateCW();
+                await Audio.PlayRotateAsync();
+                break;
             case "z":
-            case "Z":          Game.RotateCCW();     break;
-            case " ":          Game.HardDrop();      break;
+            case "Z":
+                Game.RotateCCW();
+                await Audio.PlayRotateAsync();
+                break;
+            case " ":
+                Game.HardDrop();
+                await Audio.PlayHardDropAsync();
+                break;
             case "c":
-            case "C":          Game.Hold();          break;
+            case "C":
+                Game.Hold();
+                await Audio.PlayRotateAsync();
+                break;
             case "p":
-            case "P":          Game.PauseOrResume(); break;
+            case "P":
+                Game.PauseOrResume();
+                break;
         }
     }
 
     public async ValueTask DisposeAsync()
     {
         Game.OnStateChanged -= OnGameStateChanged;
+        await Audio.StopMusicAsync();
         await Game.DisposeAsync();
     }
 }

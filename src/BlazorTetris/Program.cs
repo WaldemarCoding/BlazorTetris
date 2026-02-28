@@ -8,5 +8,6 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped<GameService>();
+builder.Services.AddScoped<AudioService>();
 
 await builder.Build().RunAsync();

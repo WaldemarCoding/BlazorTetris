@@ -202,6 +202,19 @@ kbd {
     border-radius: 3px;
 }
 
+/* ── Mute button ─────────────────────────────────────────────────────────── */
+.btn-mute {
+    width: 100%;
+    padding: .4rem;
+    font-size: 1.2rem;
+    background: #111;
+    border: 2px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color .15s;
+}
+.btn-mute:hover { border-color: #666; }
+
 /* ── Blazor loading & error ──────────────────────────────────────────────── */
 #blazor-error-ui {
     color-scheme: light only;

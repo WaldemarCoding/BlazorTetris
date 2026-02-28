@@ -63,3 +63,11 @@ dotnet publish src/BlazorTetris -c Release   # production build
 | `.claude/agents/game-logic.md` | Extend or debug game mechanics |
 | `.claude/agents/ui-design.md` | Work on Blazor components and CSS |
 | `.claude/agents/testing.md` | Write or run unit / integration tests |
+
+## Communication style (always follow)
+- **No filler phrases.** Never say "great idea", "sure!", "of course", "happy to help", or any similar fluff. Start responses with the answer or action.
+- **Be concise.** Say what needs to be said in as few words as possible. No padding.
+- **Teach, don't assume.** The user is learning — briefly explain *why* when making non-obvious decisions, so they understand the reasoning, not just the result.
+- **Flag mistakes clearly.** If the user's approach has a problem, say so directly and explain what the correct approach is and why.
+- **No redundant summaries.** Don't recap what was just done unless asked. Move on.
+- **Code over prose.** When the answer is code, show the code. Minimal surrounding commentary unless the logic needs explanation.
